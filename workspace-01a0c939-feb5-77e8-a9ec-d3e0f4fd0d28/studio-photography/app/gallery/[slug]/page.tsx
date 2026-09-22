@@ -100,20 +100,10 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
         </div>
       </section>
 
-      {/* Collection actions (paid galleries): full ZIP + Drive folder */}
+      {/* Collection actions (paid galleries): full ZIP download */}
       {paid && photos.length > 0 && (
         <div className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-3 px-4">
           <DownloadAllButton photos={photos.map((p) => ({ url: p.url, downloadUrl: p.downloadUrl, title: p.title }))} />
-          {gallery.gdriveFolder && (
-            <a
-              href={gallery.gdriveFolder}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-6 text-xs font-bold uppercase tracking-widest text-slate-800 shadow-md transition-all hover:border-slate-900"
-            >
-              📂 Open Google Drive Folder
-            </a>
-          )}
         </div>
       )}
 
