@@ -8,6 +8,7 @@ const FIELDS: { key: string; label: string; placeholder: string; section: 'profi
   { key: 'business_email', label: 'Business Email', placeholder: 'whytecobby@gmail.com', section: 'profile' },
   { key: 'business_whatsapp', label: 'WhatsApp Phone (international, no +)', placeholder: '233241234567', section: 'profile' },
   { key: 'business_location', label: 'Business Location (shown on invoices)', placeholder: 'Kumasi, Ghana', section: 'profile' },
+  { key: 'tiktok_username', label: 'TikTok Username (feeds the portfolio page, no @)', placeholder: 'whytecobby', section: 'profile' },
   { key: 'default_deposit_pct', label: 'Default Deposit % (for custom work)', placeholder: '50', section: 'booking' },
   { key: 'rush_surcharge_pct', label: 'Rush Delivery Surcharge % (0–2 days)', placeholder: '40', section: 'booking' },
   { key: 'priority_surcharge_pct', label: 'Priority Surcharge % (3–5 days)', placeholder: '35', section: 'booking' },
