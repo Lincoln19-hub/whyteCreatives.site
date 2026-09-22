@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protected Client Gallery</title>
+    
+    <!-- Tailwind CSS for high-end styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#0f172a',
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="min-h-screen bg-white font-sans antialiased">
+
+    <!-- 
+    ========================================================================
+    ✏️ QUICK CONFIGURATION PANEL (Edit these values for each client!)
+    ========================================================================
+    -->
+    <script>
+        window.galleryConfig = {
+            clientName: "Sarah & James",              // Name displayed on the screen
+            deliveryDate: "August 15, 2026",          // Delivery date displayed
+            googleDriveFolderLink: "https://drive.google.com/drive/folders/0B7vqhLhRsC5Ld3l0cWNNSmJqdkE", // Public Google Drive Folder Link
+            
+            // ── STUDIO LOGO & BRANDING SETTINGS ──
+            logoImgUrl: "",                           // Optional: Paste your logo image URL, or leave blank "" to use the default text logo!
+            studioName: "Whyte Creatives",            // Your studio name (displays if logoImgUrl is blank)
+
+            // ── SECURITY PASSWORD (Optional) ──
+            requiredPassword: "",                     // Enter a password (e.g. "1234"), or leave empty "" for no password!
+            
+            // ── PAYSTACK PAYWALL SETTINGS (Forces payment before viewing!) ──
+            paywallEnabled: true,                     // Set to true to lock the gallery until they pay!
+            paystackPublicKey: "pk_test_xxxxxxxxxxxxxxxx", // Paste your Paystack Public API Key (Test or Live)
+            unlockPrice: 500.00,                      // The GHS amount they must pay to unlock (e.g. 500 GHS)
+            clientEmail: "billing@whytecreatives.local" // Client's email address for billing and receipts
+        };
+    </script>
+    <!-- ======================================================================== -->
+
+    <!-- Load Paystack Inline JavaScript Library -->
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+
+    <div class="min-h-screen">
+        <!-- 1. SECURE PASSWORD LOCK PORTAL -->
+        <div id="portal-password-lock" class="hidden pt-32 pb-16 px-6 bg-slate-50 min-h-screen flex items-center justify-center select-none">
+            <div class="max-w-md w-full p-8 bg-white border border-slate-200 rounded-2xl shadow-xl text-center">
+                
+                <!-- Dynamic Password Logo/Header -->
+                <div id="password-logo-area" class="mb-6 flex justify-center">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Protected Client Gallery</h2>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">This is a secure, private client gallery. Please enter your unguessable access password below to unlock your photos.</p>
+                
+                <form id="gallery-password-form" class="space-y-4">
+                    <input type="password" id="gallery_password" placeholder="Enter password" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-center text-lg focus:outline-none focus:border-slate-900" required autocomplete="current-password">
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl py-3 font-semibold transition-all">Unlock Gallery</button>
+                </form>
+                <p id="password-error" class="text-red-500 text-xs mt-3 hidden font-medium">⚠️ Incorrect password. Please try again.</p>
+            </div>
+        </div>
+
+        <!-- 2. SECURE PAYSTACK PAYWALL PORTAL (Forces payment before photos show up!) -->
+        <div id="portal-paywall-lock" class="hidden pt-32 pb-16 px-6 bg-slate-50 min-h-screen flex items-center justify-center select-none">
+            <div class="max-w-xl w-full p-8 bg-white border border-slate-200 rounded-2xl shadow-xl text-center">
+                
+                <!-- Dynamic Paywall Logo/Header -->
+                <div id="paywall-logo-area" class="mb-6 flex justify-center">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+                
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-50 px-3 py-1 rounded-full">Final Settlement Required</span>
+                
+                <h2 class="text-3xl font-extrabold text-slate-900 mt-4 mb-2">Unlock Your Private Gallery!</h2>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+                    We have processed and uploaded your high-resolution photos! To unlock your secure gallery, view your beautiful masonry grid, and download your final copies, please settle the outstanding remaining balance below.
+                </p>
+                
+                <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-5 mb-8 text-left text-sm space-y-3">
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-500 font-medium">Session:</span>
+                        <span id="invoice-session" class="font-bold text-slate-900">Sarah & James Gallery</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-100 pb-2">
+                        <span class="text-slate-500 font-medium">Delivery Type:</span>
+                        <span class="font-semibold text-slate-900">Secure Online Client Gallery</span>
+                    </div>
+                    <div class="flex justify-between pt-1">
+                        <span class="text-slate-700 font-bold text-base">Unlocking Fee / Balance:</span>
+                        <span id="invoice-price" class="font-extrabold text-slate-900 text-lg">GH₵ 0.00</span>
+                    </div>
+                </div>
+                
+                <button
+                    id="pay-unlock-btn"
+                    type="button"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-3.5 text-base font-semibold shadow-md flex items-center justify-center gap-2 transition-all"
+                >
+                    <i data-lucide="credit-card" class="h-5 w-5"></i>
+                    Pay Balance via Paystack
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. PIXIESET PREMIUM GALLERY EXPERIENCE (Initially Hidden) -->
+        <div id="unlocked-gallery-content" class="hidden">
+            
+            <!-- Logo Navigation Bar on top of Cover page -->
+            <nav class="absolute top-0 left-0 right-0 z-50 bg-transparent flex items-center justify-between px-6 py-5 select-none">
+                <a href="#" id="nav-logo" class="flex items-center gap-2.5">
+                    <!-- Rendered dynamically via JS -->
+                </a>
+            </nav>
+
+            <!-- A. Cinematic Full-Bleed Hero Banner Cover (100vh) -->
+            <section class="relative h-screen w-full overflow-hidden flex items-end justify-center bg-black">
+                <img id="cover-bg-img" src="" alt="Cover" class="absolute inset-0 h-full w-full object-cover opacity-80 select-none">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/80"></div>
+                
+                <div class="relative z-10 text-center text-white pb-20 px-6 max-w-4xl select-none">
+                    <span class="text-xs uppercase tracking-[0.3em] font-light text-slate-200">Exclusive Client Preview</span>
+                    <h1 id="cover-title" class="mt-4 text-4xl sm:text-6xl lg:text-7xl font-light tracking-tight text-slate-100">
+                        Loading Gallery...
+                    </h1>
+                    <div class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-300 font-light">
+                        <span id="cover-date">Delivered: August 15, 2026</span>
+                        <span>•</span>
+                        <span id="cover-count">0 Images</span>
+                    </div>
+                    
+                    <button id="scroll-to-photos" class="mt-10 inline-flex h-11 px-6 items-center justify-center rounded-full border border-white/40 bg-white/10 hover:bg-white hover:text-black transition-all gap-2 text-xs uppercase tracking-widest font-semibold">
+                        View Collection
+                        <i data-lucide="chevron-down" class="h-4 w-4 animate-bounce"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- B. Gallery Control Hub & Loader Area -->
+            <section id="collection-grid-anchor" class="py-12 bg-white select-none border-b border-slate-100">
+                <div class="mx-auto max-w-7xl px-6 flex flex-col items-center text-center">
+                    <div id="loading-spinner" class="py-6">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto"></div>
+                        <p class="text-xs text-slate-400 mt-2 tracking-widest uppercase">Streaming photos from Google Drive...</p>
+                    </div>
+
+                    <div id="global-action-bar" class="hidden flex flex-wrap justify-center gap-4">
+                        <a id="gdrive-folder-btn" href="#" target="_blank" class="h-11 px-6 rounded-full border border-slate-200 hover:border-slate-800 text-slate-700 hover:text-black flex items-center gap-2 text-xs uppercase tracking-widest font-semibold transition-all">
+                            <i data-lucide="external-link" class="h-4 w-4"></i>
+                            Open Google Drive Folder
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- C. Pixieset-Style Justified Masonry Grid (Edge-to-Edge Fluid columns - 2 Columns on Mobile!) -->
+            <section class="py-6 bg-white min-h-screen">
+                <div id="masonry-grid" class="columns-2 md:columns-3 lg:columns-4 gap-2 md:gap-3 px-2 md:px-6">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+            </section>
+
+            <!-- D. IMMERSIVE CLIENT LIGHTBOX GALLERY SLIDER -->
+            <div id="gallery-lightbox" class="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 opacity-0 pointer-events-none transition-opacity duration-300 select-none">
+                <div class="flex items-center justify-between text-white p-2 sm:px-6">
+                    <span id="lightbox-counter" class="text-sm font-light tracking-widest">1 of 12</span>
+                    <div class="flex items-center gap-5">
+                        <a id="lightbox-download" href="#" download target="_blank" class="hover:text-slate-300 transition-colors" title="Download High-Res">
+                            <i data-lucide="download" class="h-6 w-6"></i>
+                        </a>
+                        <button id="lightbox-close" class="hover:text-red-400 transition-colors" title="Close Slideshow">
+                            <i data-lucide="x" class="h-6 w-6"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 flex items-center justify-center relative px-2 sm:px-12">
+                    <button id="lightbox-prev" class="absolute left-2 sm:left-6 text-white/50 hover:text-white bg-white/5 hover:bg-white/15 h-12 w-12 rounded-full flex items-center justify-center transition-all" title="Previous Image">
+                        <i data-lucide="chevron-left" class="h-6 w-6"></i>
+                    </button>
+                    
+                    <img id="lightbox-img" src="" alt="Gallery Preview" class="max-h-[82vh] max-w-full object-contain rounded-sm shadow-2xl transition-all duration-300 select-none">
+                    
+                    <button id="lightbox-next" class="absolute right-2 sm:right-6 text-white/50 hover:text-white bg-white/5 hover:bg-white/15 h-12 w-12 rounded-full flex items-center justify-center transition-all" title="Next Image">
+                        <i data-lucide="chevron-right" class="h-6 w-6"></i>
+                    </button>
+                </div>
+                
+                <div id="lightbox-title" class="text-center text-white/70 text-sm font-light py-4 tracking-wide truncate max-w-xl mx-auto">
+                    Image Name
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLIENT GALLERY DYNAMIC ENGINE -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const config = window.galleryConfig;
+            if (!config) return;
+
+            // DOM Elements Cache
+            const passLockDiv = document.getElementById('portal-password-lock');
+            const paywallLockDiv = document.getElementById('portal-paywall-lock');
+            const contentDiv = document.getElementById('unlocked-gallery-content');
+            
+            const passForm = document.getElementById('gallery-password-form');
+            const passInput = document.getElementById('gallery_password');
+            const passError = document.getElementById('password-error');
+
+            const invoiceSession = document.getElementById('invoice-session');
+            const invoicePrice = document.getElementById('invoice-price');
+            const payBtn = document.getElementById('pay-unlock-btn');
+
+            const coverTitle = document.getElementById('cover-title');
+            const coverDate = document.getElementById('cover-date');
+            const coverCount = document.getElementById('cover-count');
+            const coverBgImg = document.getElementById('cover-bg-img');
+
+            const masonryGrid = document.getElementById('masonry-grid');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const globalActionBar = document.getElementById('global-action-bar');
+            const gdriveBtn = document.getElementById('gdrive-folder-btn');
+
+            let gridItems = [];
+            
+            // Generate unique secure keys based on client name for isolated device memory
+            const passKey = 'static_pass_' + btoa(config.clientName).replace(/=/g, '');
+            const paidKey = 'static_paid_' + btoa(config.clientName).replace(/=/g, '');
+
+            // Render Dynamic Brand Logos across locks and navbars!
+            function renderBranding() {
+                const logoHtml = config.logoImgUrl ? 
+                    `<img src="${config.logoImgUrl}" alt="${config.studioName}" class="max-h-12 w-auto object-contain">` :
+                    `<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-slate-900 mx-auto mb-3">
+                        <i data-lucide="camera" class="h-6 w-6 text-blue-600"></i>
+                     </div>
+                     <span class="text-xl font-bold tracking-wide text-slate-800 block">${config.studioName}</span>`;
+
+                document.getElementById('password-logo-area').innerHTML = logoHtml;
+                document.getElementById('paywall-logo-area').innerHTML = logoHtml;
+
+                const navLogo = document.getElementById('nav-logo');
+                if (config.logoImgUrl) {
+                    navLogo.innerHTML = `<img src="${config.logoImgUrl}" alt="${config.studioName}" style="max-height: 40px; width: auto; object-fit: contain;">`;
+                } else {
+                    navLogo.innerHTML = `
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-slate-900">
+                            <i data-lucide="camera" class="h-4 w-4 text-blue-600"></i>
+                        </div>
+                        <span class="text-lg font-semibold text-white drop-shadow-md">${config.studioName}</span>
+                    `;
+                }
+                
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+
+            // Verify Locks on Page Load
+            function verifySecurity() {
+                renderBranding();
+
+                // 1. Password Guard
+                if (config.requiredPassword) {
+                    const savedPass = localStorage.getItem(passKey);
+                    if (savedPass !== config.requiredPassword) {
+                        passLockDiv.classList.remove('hidden');
+                        paywallLockDiv.classList.add('hidden');
+                        contentDiv.classList.add('hidden');
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                        return;
+                    }
+                }
+
+                // 2. Paystack Paywall Guard
+                if (config.paywallEnabled) {
+                    const savedPaid = localStorage.getItem(paidKey);
+                    if (savedPaid !== 'yes') {
+                        // Show paywall billing screen
+                        invoiceSession.textContent = `${config.clientName} Session Collection`;
+                        invoicePrice.textContent = `GH₵ ${config.unlockPrice.toFixed(2)}`;
+                        payBtn.textContent = `Pay Balance via Paystack — GH₵ ${config.unlockPrice.toFixed(2)}`;
+
+                        passLockDiv.classList.add('hidden');
+                        paywallLockDiv.classList.remove('hidden');
+                        contentDiv.classList.add('hidden');
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                        return;
+                    }
+                }
+                
+                // All locks passed! Reveal gallery and stream photos!
+                passLockDiv.classList.add('hidden');
+                paywallLockDiv.classList.add('hidden');
+                contentDiv.classList.remove('hidden');
+                initializeGallery();
+            }
+
+            // Password Submit Verification
+            if (passForm) {
+                passForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (passInput.value.trim() === config.requiredPassword) {
+                        localStorage.setItem(passKey, config.requiredPassword);
+                        passError.classList.add('hidden');
+                        verifySecurity();
+                    } else {
+                        passError.classList.remove('hidden');
+                        passInput.focus();
+                    }
+                });
+            }
+
+            // Paystack Trigger Callback Integration
+            if (payBtn) {
+                payBtn.addEventListener('click', function() {
+                    if (!config.paystackPublicKey || config.paystackPublicKey.includes('xx')) {
+                        alert('Paywall Configuration Error:\n\nYour Paystack Public API Key has not been configured in the gallery settings. Please open your index.html and update paystackPublicKey!');
+                        return;
+                    }
+
+                    if (typeof PaystackPop === 'undefined') {
+                        alert('Paystack Network Error:\n\nThe Paystack payment system failed to load. Please check your internet connection or turn off your ad-blocker, then try again!');
+                        return;
+                    }
+
+                    const originalText = payBtn.innerHTML;
+                    payBtn.disabled = true;
+                    payBtn.innerHTML = '<i data-lucide="loader" class="h-5 w-5 animate-spin mr-2 inline"></i> Opening Paystack Secure Gateway...';
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                    let handler = PaystackPop.setup({
+                        key: config.paystackPublicKey,
+                        email: config.clientEmail,
+                        amount: Math.round(config.unlockPrice * 100), // convert to subunit pesewas
+                        currency: 'GHS',
+                        ref: 'STATIC-' + btoa(config.clientName).substring(0, 5) + '-' + Date.now(),
+                        metadata: {
+                            custom_fields: [
+                                { display_name: "Gallery Name", variable_name: "gallery_name", value: config.clientName },
+                                { display_name: "Unlocking Fee", variable_name: "unlock_fee", value: config.unlockPrice }
+                            ]
+                        },
+                        callback: function(response) {
+                            localStorage.setItem(paidKey, 'yes');
+                            window.location.reload();
+                        },
+                        onClose: function() {
+                            alert('Payment cancelled. Please pay the outstanding balance to view your photographs.');
+                            payBtn.disabled = false;
+                            payBtn.innerHTML = originalText;
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
+                        }
+                    });
+                    handler.openIframe();
+                });
+            }
+
+            // Extract Google Drive Folder ID
+            function getFolderId(url) {
+                let matches = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+                if (matches) return matches[1];
+                matches = url.match(/id=([a-zA-Z0-9_-]+)/);
+                return matches ? matches[1] : '';
+            }
+
+            // Fetch and render Google Drive folder files on client side!
+            async function initializeGallery() {
+                // Render metadata
+                coverTitle.textContent = config.clientName;
+                coverDate.textContent = `Delivered: ${config.deliveryDate}`;
+                gdriveBtn.href = config.googleDriveFolderLink;
+
+                const folderId = getFolderId(config.googleDriveFolderLink);
+                if (!folderId) {
+                    alert('Invalid Google Drive Folder Link inside Configuration Panel!');
+                    loadingSpinner.classList.add('hidden');
+                    return;
+                }
+
+                try {
+                    // Use standard corsproxy.io (free, unlimited, no registration!) to safely read the public drive folder page!
+                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent('https://drive.google.com/drive/folders/' + folderId)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error('CORS Proxy fetch failed');
+                    
+                    const html = await response.text();
+                    
+                    // Regex match the folder state elements directly in the browser!
+                    const matchesState = [...html.matchAll(/data-id="([a-zA-Z0-9_-]{25,50})"[^>]*?data-tooltip="([^"]+)"/g)];
+                    const seenIds = new Set();
+                    let fileIndex = 1;
+
+                    matchesState.forEach(match => {
+                        const id = match[1];
+                        const title = match[2].replace(/&(amp|lt|gt|quot|#39);/g, (m, c) => ({'amp':'&','lt':'<','gt':'>','quot':'"','#39':"'"}[c]));
+                        
+                        if (seenIds.has(id)) return;
+                        seenIds.add(id);
+
+                        // Clean title
+                        let cleanTitle = title.replace(/\s+(Binary|PDF|Image|Video|Archive|Document)$/i, '');
+                        cleanTitle = cleanTitle.replace(/\.(jpg|jpeg|png|webp|gif)$/i, '');
+
+                        // Filter non-images
+                        const titleLower = title.toLowerCase();
+                        const nonImageTypes = ['.pdf', '.zip', '.rar', '.mus', '.docx', '.xlsx', '.mp3', '.mp4', ' pdf', ' binary'];
+                        const isNonImage = nonImageTypes.some(type => titleLower.includes(type));
+                        if (isNonImage) return;
+
+                        const directView = `https://lh3.googleusercontent.com/d/${id}`;
+                        const directDl = `https://drive.google.com/uc?export=download&id=${id}`;
+
+                        gridItems.push({
+                            url: directView,
+                            thumbnail: directView,
+                            download_url: directDl,
+                            title: cleanTitle || `Photo ${fileIndex.toString().padStart(2, '0')}`
+                        });
+                        fileIndex++;
+                    });
+
+                    // Render grid items
+                    renderGrid();
+
+                } catch (e) {
+                    console.error('Dynamic Folder Stream failed:', e);
+                    loadingSpinner.innerHTML = `
+                        <div class="text-red-500 font-medium">⚠️ Connection Refused</div>
+                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Could not read the public Google Drive folder. Please ensure the folder share link is correct and set to "Anyone with the link can view".</p>
+                    `;
+                }
+            }
+
+            function renderGrid() {
+                loadingSpinner.classList.add('hidden');
+                globalActionBar.classList.remove('hidden');
+
+                if (gridItems.length === 0) {
+                    masonryGrid.innerHTML = `
+                        <div class="col-span-full py-12 text-center text-slate-400">
+                            <i data-lucide="image" class="h-10 w-10 mx-auto mb-2 text-slate-300"></i>
+                            <p>No photos found in this folder yet.</p>
+                        </div>
+                    `;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+
+                // Update Cover image and count
+                coverBgImg.src = gridItems[0].url;
+                coverCount.textContent = `${gridItems.length} Images`;
+
+                // Build HTML grid cards
+                masonryGrid.innerHTML = "";
+                gridItems.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = "break-inside-avoid mb-2 md:mb-3 relative overflow-hidden rounded-lg bg-slate-50 shadow-sm transition-all hover:shadow-lg group";
+                    card.innerHTML = `
+                        <img 
+                            src="${item.thumbnail}" 
+                            alt="${item.title}" 
+                            class="w-full h-auto object-cover cursor-pointer select-none img-trigger-lightbox"
+                            data-index="${index}"
+                        >
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end justify-between p-4 pointer-events-none">
+                            <span class="text-white text-xs font-light tracking-wide truncate pr-4">${item.title}</span>
+                            
+                            <div class="flex items-center gap-2 pointer-events-auto">
+                                <button 
+                                    class="h-9 w-9 bg-white/95 hover:bg-white text-slate-800 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 btn-trigger-lightbox"
+                                    data-index="${index}"
+                                    title="View Slideshow"
+                                >
+                                    <i data-lucide="expand" class="h-4 w-4 text-slate-800"></i>
+                                </button>
+                                
+                                <a 
+                                    href="${item.download_url}" 
+                                    download 
+                                    target="_blank"
+                                    class="h-9 w-9 bg-white/95 hover:bg-white text-slate-800 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105" 
+                                    title="Download Photo"
+                                >
+                                    <i data-lucide="download" class="h-4 w-4 text-slate-800"></i>
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    masonryGrid.appendChild(card);
+                });
+
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                
+                // Bind lightbox triggers
+                document.querySelectorAll('.img-trigger-lightbox, .btn-trigger-lightbox').forEach(el => {
+                    el.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const idx = this.getAttribute('data-index');
+                        openLightbox(idx);
+                    });
+                });
+            }
+
+            // Scroll helper
+            const scrollBtn = document.getElementById('scroll-to-photos');
+            if (scrollBtn) {
+                scrollBtn.addEventListener('click', function() {
+                    document.getElementById('collection-grid-anchor').scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+
+            // ── IMMERSIVE LIGHTBOX SLIDER CONTROLLER ──
+            const lightbox = document.getElementById('gallery-lightbox');
+            const lbImg = document.getElementById('lightbox-img');
+            const lbCounter = document.getElementById('lightbox-counter');
+            const lbDownload = document.getElementById('lightbox-download');
+            const lbTitle = document.getElementById('lightbox-title');
+            const lbClose = document.getElementById('lightbox-close');
+            const lbPrev = document.getElementById('lightbox-prev');
+            const lbNext = document.getElementById('lightbox-next');
+
+            let currentIndex = 0;
+
+            function openLightbox(index) {
+                currentIndex = parseInt(index);
+                updateLightboxContent();
+                lightbox.classList.remove('pointer-events-none', 'opacity-0');
+                lightbox.classList.add('opacity-100');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeLightbox() {
+                lightbox.classList.add('pointer-events-none', 'opacity-0');
+                lightbox.classList.remove('opacity-100');
+                document.body.style.overflow = '';
+            }
+
+            function updateLightboxContent() {
+                const item = gridItems[currentIndex];
+                lbImg.classList.add('scale-95', 'opacity-50');
+                
+                setTimeout(() => {
+                    lbImg.src = item.url;
+                    lbImg.alt = item.title;
+                    lbCounter.textContent = `${currentIndex + 1} of ${gridItems.length}`;
+                    lbDownload.href = item.download_url;
+                    lbTitle.textContent = item.title;
+                    lbImg.classList.remove('scale-95', 'opacity-50');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }, 100);
+            }
+
+            function nextImage() {
+                if (gridItems.length <= 1) return;
+                currentIndex = (currentIndex + 1) % gridItems.length;
+                updateLightboxContent();
+            }
+
+            function prevImage() {
+                if (gridItems.length <= 1) return;
+                currentIndex = (currentIndex - 1 + gridItems.length) % gridItems.length;
+                updateLightboxContent();
+            }
+
+            // Lightbox controls
+            lbClose.addEventListener('click', closeLightbox);
+            lbNext.addEventListener('click', nextImage);
+            lbPrev.addEventListener('click', prevImage);
+
+            // Keyboard Navigation
+            document.addEventListener('keydown', function(e) {
+                if (lightbox.classList.contains('opacity-100')) {
+                    if (e.key === 'ArrowRight') nextImage();
+                    else if (e.key === 'ArrowLeft') prevImage();
+                    else if (e.key === 'Escape') closeLightbox();
+                }
+            });
+
+            // Swipe Gestures for Mobile Touch
+            let startX = 0;
+            lightbox.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive: true});
+            lightbox.addEventListener('touchend', e => {
+                let diffX = e.changedTouches[0].clientX - startX;
+                if (Math.abs(diffX) > 60) {
+                    if (diffX > 0) prevImage(); // Swipe Right
+                    else nextImage(); // Swipe Left
+                }
+            }, {passive: true});
+
+
+            // Run initial security verification
+            verifySecurity();
+        });
+    </script>
+</body>
+</html>
