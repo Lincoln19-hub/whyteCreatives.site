@@ -1,8 +1,20 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, Sparkles, Clock, Heart, Calendar, MapPin } from 'lucide-react';
+import { Camera, Sparkles, Clock, Heart, Calendar, MapPin, Play } from 'lucide-react';
+import { db } from '@/lib/db';
+import { settings } from '@/lib/schema';
+import { getLatestTikTokVideos, cleanUsername } from '@/lib/tiktok';
+import { BRAND } from '@/lib/brand';
 
-export default function Home() {
+export default async function Home() {
+  // Brand + TikTok username from studio settings (Admin → Settings)
+  const cfgRows = await db.select().from(settings);
+  const cfg: Record<string, string> = {};
+  for (const r of cfgRows) cfg[r.key] = r.value ?? '';
+  const brandName = (cfg.business_name || '').trim() || BRAND;
+  const tiktokUser = cleanUsername(cfg.tiktok_username || '');
+  const tiktoks = tiktokUser ? await getLatestTikTokVideos(tiktokUser, 8) : [];
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -12,7 +24,7 @@ export default function Home() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-primary">
               <Camera className="h-4 w-4" />
             </div>
-            <span className="text-lg font-semibold">Studio</span>
+            <span className="text-lg font-semibold">{brandName}</span>
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             <a href="#about" className="text-sm text-gray-600 hover:text-gray-900">About</a>
@@ -139,7 +151,7 @@ export default function Home() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary">
               <Clock className="h-4 w-4" />
-              About the Studio
+              About {brandName}
             </div>
             <h2 className="mb-5 text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">
               Where Art Meets Authenticity
@@ -180,26 +192,63 @@ export default function Home() {
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">Explore Our Latest Work</h2>
           </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {[
-              { label: 'Outdoor Portrait', pos: 'center', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000' },
-              { label: 'Studio Portrait', pos: 'top', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=1000' },
-              { label: 'Wedding Celebration', pos: 'bottom', image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
-              { label: 'Timeless Session', pos: 'center', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000' },
-            ].map((item, i) => (
-              <div key={i} className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
-                <img
-                  src={item.image}
-                  alt={item.label}
-                  className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}
-                  style={{ objectPosition: item.pos }}
-                />
-                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                  <span className="p-5 text-sm font-medium text-white">{item.label}</span>
-                </div>
+          {tiktoks.length > 0 ? (
+            /* 🎬 Latest works pulled live from TikTok — auto-updates with every post */
+            <>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {tiktoks.map((t) => (
+                  <a key={t.id} href={t.url} target="_blank" rel="noopener" className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-900">
+                    {t.thumbnail && (
+                      <img
+                        src={t.thumbnail}
+                        alt={t.title}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-white/15 backdrop-blur">
+                        <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
+                      </span>
+                    </div>
+                    <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur">TikTok</span>
+                    <div className="absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-black/60 via-transparent p-4 opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="line-clamp-2 text-sm font-medium text-white">{t.title}</span>
+                    </div>
+                  </a>
+                ))}
               </div>
-            ))}
-          </div>
+              <div className="mt-8 text-center">
+                <Link href="/portfolio" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+                  View Full Portfolio →
+                </Link>
+              </div>
+            </>
+          ) : (
+            /* Fallback showcase until TikTok is connected in Admin → Settings */
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {[
+                { label: 'Outdoor Portrait', pos: 'center', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000' },
+                { label: 'Studio Portrait', pos: 'top', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=1000' },
+                { label: 'Wedding Celebration', pos: 'bottom', image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
+                { label: 'Timeless Session', pos: 'center', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000' },
+              ].map((item, i) => (
+                <div key={i} className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
+                  <img
+                    src={item.image}
+                    alt={item.label}
+                    className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}
+                    style={{ objectPosition: item.pos }}
+                  />
+                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="p-5 text-sm font-medium text-white">{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -232,7 +281,7 @@ export default function Home() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-primary">
                   <Camera className="h-4 w-4" />
                 </div>
-                <span className="text-lg font-semibold">Studio</span>
+                <span className="text-lg font-semibold">{brandName}</span>
               </Link>
               <p className="max-w-xs text-sm text-gray-500">
                 Capturing life's most precious moments with elegance, artistry, and attention to detail.
@@ -271,7 +320,7 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-10 border-t border-gray-100 pt-6 text-center text-sm text-gray-400">
-            © {new Date().getFullYear()} Studio Photography. All rights reserved.
+            © {new Date().getFullYear()} {brandName}. All rights reserved.
           </div>
         </div>
       </footer>

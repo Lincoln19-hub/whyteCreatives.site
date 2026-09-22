@@ -6,9 +6,10 @@ import { Camera, Play } from 'lucide-react';
 import ShareLinkButton from '@/components/ShareLinkButton';
 import ShareButton from '@/components/ShareButton';
 import { getLatestTikTokVideos, cleanUsername } from '@/lib/tiktok';
+import { BRAND } from '@/lib/brand';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Portfolio — Studio Photography' };
+export const metadata = { title: `Portfolio — ${BRAND}` };
 
 export default async function PortfolioPage() {
   // ── TikTok username: admin Settings → env fallback ──
@@ -33,7 +34,7 @@ export default async function PortfolioPage() {
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-bold text-slate-900">
-            <Camera className="h-6 w-6" /> Studio Photography
+            <Camera className="h-6 w-6" /> {BRAND}
           </Link>
           <Link href="/book" className="btn btn-primary">Book a Session</Link>
         </div>

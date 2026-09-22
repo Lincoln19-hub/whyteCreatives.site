@@ -1,6 +1,7 @@
 'use client';
 
 import { Share2 } from 'lucide-react';
+import { BRAND } from '@/lib/brand';
 
 /**
  * One-tap social sharing — sends the actual image file to Instagram / TikTok /
@@ -16,7 +17,7 @@ export default function ShareButton({ url, title, compact = false }: { url: stri
       const blob = await res.blob();
       const file = new File([blob], `${name}.jpg`, { type: blob.type || 'image/jpeg' });
       if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: title || 'Studio Photography' });
+        await navigator.share({ files: [file], title: title || BRAND });
         return;
       }
       throw new Error('no-native-share');

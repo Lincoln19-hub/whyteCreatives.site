@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Camera, Lock, Loader2 } from 'lucide-react';
+import { BRAND } from '@/lib/brand';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -38,7 +39,7 @@ export default function AdminLogin() {
           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
             <Camera className="h-6 w-6 text-slate-800" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Studio Admin</h1>
+          <h1 className="text-xl font-bold text-slate-900">{BRAND} Admin</h1>
           <p className="mt-1 text-xs text-slate-400">Management area — studio staff only</p>
         </div>
         <form onSubmit={submit} className="space-y-4">

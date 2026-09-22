@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { BRAND } from '@/lib/brand';
 import { usePathname } from 'next/navigation';
 import { ReactNode, useState } from 'react';
 import {
@@ -62,7 +63,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between border-b p-4">
             <Link href="/admin" className="flex items-center gap-2 text-lg font-bold text-slate-900">
               <Camera className="h-6 w-6" />
-              Studio Admin
+              {BRAND}
             </Link>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
               <X className="h-5 w-5" />

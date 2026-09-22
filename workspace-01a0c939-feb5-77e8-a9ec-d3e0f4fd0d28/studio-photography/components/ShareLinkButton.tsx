@@ -1,13 +1,14 @@
 'use client';
 
 import { Share2 } from 'lucide-react';
+import { BRAND } from '@/lib/brand';
 
 /** Share a link (video/post URL) via the phone's share sheet; desktop → copies the link */
 export default function ShareLinkButton({ url, title }: { url: string; title?: string }) {
   async function share() {
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ url, title: title || 'Studio Photography' });
+        await navigator.share({ url, title: title || BRAND });
         return;
       }
       throw new Error('no-share');
