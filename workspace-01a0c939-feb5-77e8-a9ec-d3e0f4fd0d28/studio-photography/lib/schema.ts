@@ -106,6 +106,7 @@ export const invoices = pgTable("invoices", {
   status: varchar("status", { length: 20 }).default("unpaid").notNull(), // unpaid | paid
   paystackRef: varchar("paystack_ref", { length: 120 }).default(""),
   dueDate: varchar("due_date", { length: 20 }).default(""),
+  notes: text("notes").default(""),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
