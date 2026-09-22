@@ -205,6 +205,15 @@ export default function InvoicesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
+                        <a
+                          href={`/invoice/${encodeURIComponent(inv.number)}`}
+                          target="_blank"
+                          rel="noopener"
+                          title="View / Download PDF"
+                          className="inline-flex h-8 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 text-xs font-bold text-blue-600 hover:text-blue-800"
+                        >
+                          📄 PDF
+                        </a>
                         <button
                           onClick={() => toggleStatus(inv)}
                           disabled={busy === inv.id}

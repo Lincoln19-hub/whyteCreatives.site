@@ -8,6 +8,7 @@ import { eq, asc } from "drizzle-orm";
 import { fetchDriveFolder, sizedUrl } from "@/lib/gdrive";
 import PasswordGate from "./PasswordGate";
 import PayBalance from "./PayBalance";
+import ShareButton from "@/components/ShareButton";
 
 function appSecret(): string {
   return process.env.APP_SECRET || process.env.PAYSTACK_SECRET_KEY || "studio-dev-secret";
@@ -132,17 +133,20 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
                     className="w-full select-none object-cover"
                   />
                   {!paid && <div className="watermark absolute inset-0 z-[5]" aria-hidden />}
-                  {paid && (
-                    <a
-                      href={p.downloadUrl}
-                      target="_blank"
-                      rel="noopener"
-                      className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-800 opacity-0 shadow-lg transition-all group-hover:opacity-100"
-                      title="Download Photo"
-                    >
-                      ⬇
-                    </a>
-                  )}
+                  <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 transition-all group-hover:opacity-100">
+                    {paid && (
+                      <a
+                        href={p.downloadUrl}
+                        target="_blank"
+                        rel="noopener"
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-lg hover:scale-105"
+                        title="Download Photo"
+                      >
+                        ⬇
+                      </a>
+                    )}
+                    <ShareButton url={p.url} title={p.title} compact />
+                  </div>
                 </div>
               ))}
             </div>
