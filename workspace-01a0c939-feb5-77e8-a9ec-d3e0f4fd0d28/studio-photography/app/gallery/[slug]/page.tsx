@@ -9,6 +9,8 @@ import { fetchDriveFolder, sizedUrl } from "@/lib/gdrive";
 import PasswordGate from "./PasswordGate";
 import PayBalance from "./PayBalance";
 import ShareButton from "@/components/ShareButton";
+import PhotoDownloadButton from "@/components/PhotoDownloadButton";
+import DownloadAllButton from "@/components/DownloadAllButton";
 
 function appSecret(): string {
   return process.env.APP_SECRET || process.env.PAYSTACK_SECRET_KEY || "studio-dev-secret";
@@ -98,6 +100,23 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
         </div>
       </section>
 
+      {/* Collection actions (paid galleries): full ZIP + Drive folder */}
+      {paid && photos.length > 0 && (
+        <div className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-3 px-4">
+          <DownloadAllButton photos={photos.map((p) => ({ url: p.url, downloadUrl: p.downloadUrl, title: p.title }))} />
+          {gallery.gdriveFolder && (
+            <a
+              href={gallery.gdriveFolder}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-6 text-xs font-bold uppercase tracking-widest text-slate-800 shadow-md transition-all hover:border-slate-900"
+            >
+              📂 Open Google Drive Folder
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Balance banner (preview mode) */}
       {!paid && (
         <div className="mx-auto mt-6 max-w-3xl px-4">
@@ -134,17 +153,7 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
                   />
                   {!paid && <div className="watermark absolute inset-0 z-[5]" aria-hidden />}
                   <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 transition-all group-hover:opacity-100">
-                    {paid && (
-                      <a
-                        href={p.downloadUrl}
-                        target="_blank"
-                        rel="noopener"
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-lg hover:scale-105"
-                        title="Download Photo"
-                      >
-                        ⬇
-                      </a>
-                    )}
+                    {paid && <PhotoDownloadButton url={p.url} downloadUrl={p.downloadUrl} title={p.title} />}
                     <ShareButton url={p.url} title={p.title} compact />
                   </div>
                 </div>
