@@ -10,6 +10,7 @@ import {
   Camera,
   FileText,
   Images,
+  Image,
   Package,
   Users,
   Settings,
@@ -28,6 +29,7 @@ const navItems = [
   { href: '/admin/invoices', label: 'Invoices', icon: FileText },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/images', label: 'Site Images', icon: Image },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

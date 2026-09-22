@@ -64,7 +64,7 @@ export default async function Home() {
             <div className="relative">
               <div className="overflow-hidden rounded-2xl shadow-2xl">
                 <img
-                  src="/images/hero-portrait.webp"
+                  src={cfg.image_hero || "/images/hero-portrait.webp"}
                   alt="Professional portrait photography"
                   className="aspect-[3/4] w-full object-cover"
                 />
@@ -127,7 +127,7 @@ export default async function Home() {
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 md:grid-cols-2 md:gap-20">
           <div className="overflow-hidden rounded-2xl shadow-xl">
             <img
-              src="/images/about-photo.webp"
+              src={cfg.image_about || "/images/about-photo.webp"}
               alt="Photography in action"
               className="aspect-[4/5] w-full object-cover"
             />
@@ -214,10 +214,10 @@ export default async function Home() {
             /* Fallback showcase until TikTok is connected in Admin → Settings */
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
-                { label: 'Outdoor Portrait', pos: 'center', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000' },
-                { label: 'Studio Portrait', pos: 'top', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=1000' },
-                { label: 'Wedding Celebration', pos: 'bottom', image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
-                { label: 'Timeless Session', pos: 'center', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000' },
+                { label: cfg.image_gallery_1_label || 'Outdoor Portrait', pos: 'center', image: cfg.image_gallery_1 || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000' },
+                { label: cfg.image_gallery_2_label || 'Studio Portrait', pos: 'top', image: cfg.image_gallery_2 || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=1000' },
+                { label: cfg.image_gallery_3_label || 'Wedding Celebration', pos: 'bottom', image: cfg.image_gallery_3 || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
+                { label: cfg.image_gallery_4_label || 'Timeless Session', pos: 'center', image: cfg.image_gallery_4 || 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000' },
               ].map((item, i) => (
                 <div key={i} className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
                   <img
