@@ -93,3 +93,14 @@ export function sizedUrl(url: string, width = 800): string {
   if (/=w\d+(-h\d+)*(-[a-z]+)*$/.test(url)) return url;
   return `${url}=w${width}`;
 }
+
+// ── Cached folder fetch (for the homepage slideshow — avoids re-scraping per visit) ──
+const folderCache = new Map<string, { ts: number; files: DriveFile[] }>();
+
+export async function fetchDriveFolderCached(folderUrl: string, ttlMs = 30 * 60 * 1000): Promise<DriveFile[]> {
+  const hit = folderCache.get(folderUrl);
+  if (hit && Date.now() - hit.ts < ttlMs) return hit.files;
+  const files = await fetchDriveFolder(folderUrl);
+  if (files.length > 0) folderCache.set(folderUrl, { ts: Date.now(), files });
+  return files;
+}

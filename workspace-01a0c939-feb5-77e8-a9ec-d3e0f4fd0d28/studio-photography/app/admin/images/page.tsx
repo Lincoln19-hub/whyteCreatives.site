@@ -7,10 +7,10 @@ import ImageSlotEditor from '@/components/ImageSlotEditor';
 const SLOTS = [
   { key: 'image_hero', label: 'Homepage Hero', hint: 'The big first-impression photo at the top of the site', aspect: 'aspect-[16/9]' },
   { key: 'image_about', label: 'About Section Photo', hint: 'Shown next to “About whyteCreatives”', aspect: 'aspect-[4/3]' },
-  { key: 'image_gallery_1', label: 'Gallery Card 1', hint: 'Fallback showcase card (used until TikTok is connected)', aspect: 'aspect-[3/4]' },
-  { key: 'image_gallery_2', label: 'Gallery Card 2', hint: 'Fallback showcase card', aspect: 'aspect-[3/4]' },
-  { key: 'image_gallery_3', label: 'Gallery Card 3', hint: 'Fallback showcase card', aspect: 'aspect-[3/4]' },
-  { key: 'image_gallery_4', label: 'Gallery Card 4', hint: 'Fallback showcase card', aspect: 'aspect-[3/4]' },
+  { key: 'image_gallery_1', label: 'Gallery Card 1', hint: 'Fallback card (used when no Drive folder or TikTok is set)', aspect: 'aspect-[3/4]' },
+  { key: 'image_gallery_2', label: 'Gallery Card 2', hint: 'Fallback card (used when no Drive folder or TikTok is set)', aspect: 'aspect-[3/4]' },
+  { key: 'image_gallery_3', label: 'Gallery Card 3', hint: 'Fallback card (used when no Drive folder or TikTok is set)', aspect: 'aspect-[3/4]' },
+  { key: 'image_gallery_4', label: 'Gallery Card 4', hint: 'Fallback card (used when no Drive folder or TikTok is set)', aspect: 'aspect-[3/4]' },
 ];
 
 const LABEL_KEYS = ['image_gallery_1_label', 'image_gallery_2_label', 'image_gallery_3_label', 'image_gallery_4_label'];
@@ -36,6 +36,7 @@ export default function SiteImagesPage() {
     try {
       const payload: Record<string, string> = {};
       for (const s of SLOTS) payload[s.key] = values[s.key] ?? '';
+      payload.gallery_drive_folder = values.gallery_drive_folder ?? '';
       for (const k of LABEL_KEYS) payload[k] = values[k] ?? '';
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
@@ -56,6 +57,30 @@ export default function SiteImagesPage() {
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><ImageIcon className="h-6 w-6 text-slate-400" /> Site Images</h1>
         <p className="mt-1 text-sm text-slate-500">Change every photo on the site — upload from your computer or paste a link. No code, ever.</p>
+      </div>
+
+      {/* Homepage gallery slideshow — Google Drive folder */}
+      <div className="card p-5">
+        <h3 className="text-sm font-bold text-slate-900">🎞️ Homepage Gallery Slideshow (Google Drive)</h3>
+        <p className="mt-0.5 text-xs text-slate-400">Paste a public folder link — every photo inside becomes a slide in the homepage “Our Gallery” slideshow. Sharing must be “Anyone with the link”.</p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            className="input flex-1"
+            placeholder="https://drive.google.com/drive/folders/…"
+            value={values.gallery_drive_folder ?? ''}
+            onChange={(e) => setValues((prev) => ({ ...prev, gallery_drive_folder: e.target.value }))}
+          />
+          {values.gallery_drive_folder && (
+            <button
+              type="button"
+              onClick={() => setValues((prev) => ({ ...prev, gallery_drive_folder: '' }))}
+              className="rounded-full bg-slate-100 px-4 py-2 text-xs font-bold text-slate-500 hover:bg-red-50 hover:text-red-600"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-[11px] text-slate-400">Leave empty to fall back to the TikTok feed or the showcase cards below.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

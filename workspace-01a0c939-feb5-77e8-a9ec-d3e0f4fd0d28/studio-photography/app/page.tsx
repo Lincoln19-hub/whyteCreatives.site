@@ -4,6 +4,8 @@ import { Camera, Sparkles, Clock, Heart, Calendar, MapPin, Play } from 'lucide-r
 import { db } from '@/lib/db';
 import { settings } from '@/lib/schema';
 import { getLatestTikTokVideos, cleanUsername } from '@/lib/tiktok';
+import { fetchDriveFolderCached, sizedUrl } from '@/lib/gdrive';
+import HomeSlideshow from '@/components/HomeSlideshow';
 import { BRAND } from '@/lib/brand';
 
 export default async function Home() {
@@ -14,6 +16,9 @@ export default async function Home() {
   const brandName = (cfg.business_name || '').trim() || BRAND;
   const tiktokUser = cleanUsername(cfg.tiktok_username || '');
   const tiktoks = tiktokUser ? await getLatestTikTokVideos(tiktokUser, 8) : [];
+  // Homepage gallery slideshow — fed by a public Google Drive folder (Admin → Site Images)
+  const driveFolder = (cfg.gallery_drive_folder || '').trim();
+  const drivePhotos = driveFolder ? await fetchDriveFolderCached(driveFolder) : [];
 
   return (
     <div className="min-h-screen">
@@ -176,7 +181,17 @@ export default async function Home() {
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">Explore Our Latest Work</h2>
           </div>
-          {tiktoks.length > 0 ? (
+          {drivePhotos.length > 0 ? (
+            /* 🎞️ Google Drive folder slideshow — paste one link, every photo becomes a slide */
+            <>
+              <HomeSlideshow images={drivePhotos.map((d) => ({ url: sizedUrl(d.url, 1600), title: d.title }))} />
+              <div className="mt-8 text-center">
+                <Link href="/portfolio" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+                  View Full Portfolio →
+                </Link>
+              </div>
+            </>
+          ) : tiktoks.length > 0 ? (
             /* 🎬 Latest works pulled live from TikTok — auto-updates with every post */
             <>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
