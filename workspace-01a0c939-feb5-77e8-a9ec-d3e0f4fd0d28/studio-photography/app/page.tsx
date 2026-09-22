@@ -74,22 +74,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-y border-gray-100 bg-gray-50/50 py-12">
-        <div className="mx-auto grid max-w-7xl grid-cols-3 divide-x divide-gray-200 px-6">
-          {[
-            { value: '500+', label: 'Happy Clients' },
-            { value: '15+', label: 'Years Experience' },
-            { value: '1000+', label: 'Photos Delivered' },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center px-4">
-              <div className="text-3xl font-bold text-gray-900 md:text-4xl">{stat.value}</div>
-              <div className="mt-1 text-sm text-gray-500">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Services */}
       <section id="services" className="py-24">
         <div className="mx-auto max-w-7xl px-6">
