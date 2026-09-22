@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   CalendarCheck,
   Camera,
+  Images,
   Package,
   Users,
   Settings,
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/admin/sessions', label: 'Sessions', icon: Camera },
   { href: '/admin/packages', label: 'Packages', icon: Package },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
+  { href: '/admin/galleries', label: 'Galleries', icon: Images },
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];

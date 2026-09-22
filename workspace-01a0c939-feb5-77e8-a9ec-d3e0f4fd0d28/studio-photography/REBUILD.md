@@ -25,6 +25,27 @@ The full studio business engine, rebuilt as a **Next.js static/serverless app** 
 
 ## Remaining steps (user-side)
 
+### 🟢 Easiest path — one script does everything
+
+```bash
+bash setup-vercel.sh
+```
+It installs the Vercel CLI, logs you in (one browser click), creates the project, **pushes every value from `.env` automatically**, and deploys. No manual env-var typing at all.
+
+### 🔵 Alternative — paste these into Vercel → Settings → Environment Variables
+
+| Name | Value |
+|---|---|
+| `DATABASE_URL` | `postgresql://neondb_owner:npg_pXQYk7Kh9ZLx@ep-odd-bonus-atphxh50-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require` |
+| `PAYSTACK_PUBLIC_KEY` | `pk_live_f6e1445083527af6b579c3b096671cb06d22a22f` |
+| `PAYSTACK_SECRET_KEY` | `sk_live_f0db4d7a3400044dda36659705d4d6ee0b7ae94f` |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | `pk_live_f6e1445083527af6b579c3b096671cb06d22a22f` |
+| `APP_SECRET` | `eb77cafebf8f0678b1101c0a95aabdf658f1ef7e4d4b83ff55f6a4d255a6c6b0` |
+| `ADMIN_PASSWORD` | `WhyteStudio2026!` |
+| `ADMIN_TOKEN` | `4bad0d994cac09814794e48038f8d4540bf7c370d313b2ecf09c1b63f62e7d12` |
+
+Then: Paystack Dashboard → Settings → API Keys & Webhooks → `https://YOUR-DOMAIN/api/paystack/webhook`
+
 
 
 1. **Push this folder to GitHub** (new repo)

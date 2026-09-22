@@ -3,8 +3,8 @@ import { createHmac } from "crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { galleries } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { galleries, galleryPhotos } from "@/lib/schema";
+import { eq, asc } from "drizzle-orm";
 import { fetchDriveFolder, sizedUrl } from "@/lib/gdrive";
 import PasswordGate from "./PasswordGate";
 import PayBalance from "./PayBalance";
@@ -50,8 +50,26 @@ export default async function GalleryPage({ params }: { params: Promise<{ slug: 
   const needsPassword = !!gallery.passwordHash && token !== expected;
   if (needsPassword) return <PasswordGate slug={slug} title={gallery.title} />;
 
-  // ── Photos from Google Drive ──
-  const photos = gallery.gdriveFolder ? await fetchDriveFolder(gallery.gdriveFolder) : [];
+  // ── Photos: visually uploaded (DB) + Google Drive folder, de-duplicated ──
+  const dbPhotos = await db
+    .select()
+    .from(galleryPhotos)
+    .where(eq(galleryPhotos.galleryId, gallery.id))
+    .orderBy(asc(galleryPhotos.sortOrder), asc(galleryPhotos.id));
+  const seen = new Set<string>();
+  const photos = [];
+  for (const p of dbPhotos) {
+    if (seen.has(p.url)) continue;
+    seen.add(p.url);
+    photos.push({ id: `db-${p.id}`, url: p.url, downloadUrl: p.url, title: p.title || "Photo" });
+  }
+  if (gallery.gdriveFolder) {
+    for (const f of await fetchDriveFolder(gallery.gdriveFolder)) {
+      if (seen.has(f.url)) continue;
+      seen.add(f.url);
+      photos.push(f);
+    }
+  }
   const paid = gallery.status === "paid" || Number(gallery.balance) <= 0;
   const cover = gallery.coverUrl || (photos[0] ? sizedUrl(photos[0].url, 1600) : "");
 

@@ -141,3 +141,15 @@ export const settings = pgTable("settings", {
   value: text("value").default(""),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// ── Gallery Photos (visual uploads + Drive imports) ──────────────────────────
+export const galleryPhotos = pgTable("gallery_photos", {
+  id: serial("id").primaryKey(),
+  galleryId: integer("gallery_id")
+    .notNull()
+    .references(() => galleries.id, { onDelete: "cascade" }),
+  url: text("url").notNull(), // direct image URL, lh3 CDN link, or compressed data-URI
+  title: varchar("title", { length: 255 }).default(""),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
