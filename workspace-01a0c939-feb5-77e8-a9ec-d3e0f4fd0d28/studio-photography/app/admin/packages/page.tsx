@@ -372,35 +372,6 @@ export default function PackagesPage() {
               <p className="mt-1 text-sm text-slate-500">{viewPkg.duration}</p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div><p className="text-xs text-slate-400 uppercase">Session</p><p className="text-sm font-medium">{getSessionName(viewPkg.sessionId)}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Status</p><p className="text-sm font-medium">{viewPkg.active ? 'Active' : 'Inactive'}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Max People</p><p className="text-sm font-medium">{viewPkg.maxPeople ?? 1}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Edited Photos</p><p className="text-sm font-medium">{viewPkg.editedPhotos ?? 0}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Outfit Changes</p><p className="text-sm font-medium">{viewPkg.outfitChanges ?? 1}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Locations</p><p className="text-sm font-medium">{viewPkg.locations ?? 1}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Delivery Time</p><p className="text-sm font-medium">{viewPkg.deliveryTime || '—'}</p></div>
-              <div><p className="text-xs text-slate-400 uppercase">Deposit</p><p className="text-sm font-medium">{viewPkg.depositPercentage}%</p></div>
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400 uppercase mb-2">Included Services</p>
-              <div className="grid gap-1 sm:grid-cols-2 text-sm">
-                {[
-                  ['Online Gallery', viewPkg.onlineGallery],
-                  ['Raw Images', viewPkg.rawImages],
-                  ['Printing', viewPkg.printing],
-                  ['Transportation', viewPkg.transportation],
-                  ['Drone Coverage', viewPkg.droneCoverage],
-                  ['Priority Editing', viewPkg.priorityEditing],
-                  ['Rescheduling', viewPkg.rescheduleAllowed],
-                ].map(([label, included]) => (
-                  <p key={label as string} className={included ? 'text-green-600' : 'text-slate-400'}>
-                    {included ? '✓' : '✗'} {label as string}
-                  </p>
-                ))}
-              </div>
-            </div>
 
             {viewPkg.features.length > 0 && (
               <div>
