@@ -1,326 +1,195 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { Camera, Sparkles, Clock, Heart, Calendar, MapPin, Play } from 'lucide-react';
 import { db } from '@/lib/db';
-import { settings } from '@/lib/schema';
-import { getLatestTikTokVideos, cleanUsername } from '@/lib/tiktok';
-import { fetchDriveFolderCached, sizedUrl } from '@/lib/gdrive';
-import HomeSlideshow from '@/components/HomeSlideshow';
+import { sessions, settings } from '@/lib/schema';
+import { and, eq, isNull, asc } from 'drizzle-orm';
+import { Camera, ArrowRight } from 'lucide-react';
 import { BRAND } from '@/lib/brand';
+import { fetchDriveFolderCached, sizedUrl } from '@/lib/gdrive';
+
+export const dynamic = 'force-dynamic';
+
+// Default images pulled from the live Pixieset site (swap anytime in Admin → Site Images)
+const DEFAULTS = {
+  hero: 'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/banner_5_lg.jpg?v=1763645177000',
+  about: 'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/portrait_1_lg.jpg?v=1763645188000',
+  wall: [
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/vertical_1_lg.jpg?v=1760600122000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/vertical_2_lg.jpg?v=1760600123000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/portrait_2_lg.jpg?v=1763645228000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/vertical_5_lg.jpg?v=1760600135000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/portrait_5_lg.jpg?v=1760600033000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/horizontal_7_lg.jpg?v=1760600096000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/horizontal_4_lg.jpg?v=1760600084000',
+    'https://assets-pw.pixieset.com/flex/flex-themes/theme-images/mason/horizontal_3_lg.jpg?v=1760600057000',
+  ],
+};
 
 export default async function Home() {
-  // Brand + TikTok username from studio settings (Admin → Settings)
+  // ── Settings + data ──
   const cfgRows = await db.select().from(settings);
   const cfg: Record<string, string> = {};
   for (const r of cfgRows) cfg[r.key] = r.value ?? '';
-  const brandName = (cfg.business_name || '').trim() || BRAND;
-  const tiktokUser = cleanUsername(cfg.tiktok_username || '');
-  const tiktoks = tiktokUser ? await getLatestTikTokVideos(tiktokUser, 8) : [];
-  // Homepage gallery slideshow — fed by a public Google Drive folder (Admin → Site Images)
+
+  const sessionRows = await db
+    .select()
+    .from(sessions)
+    .where(and(eq(sessions.active, true), isNull(sessions.deletedAt)))
+    .orderBy(asc(sessions.displayOrder), asc(sessions.createdAt));
+
+  // Masonry wall: Drive folder photos (if set) → Pixieset-style defaults
   const driveFolder = (cfg.gallery_drive_folder || '').trim();
   const drivePhotos = driveFolder ? await fetchDriveFolderCached(driveFolder) : [];
+  const wallImages = drivePhotos.length > 0
+    ? drivePhotos.slice(0, 8).map((d) => sizedUrl(d.url, 900))
+    : DEFAULTS.wall;
+
+  const heroImg = cfg.image_hero || DEFAULTS.hero;
+  const aboutImg = cfg.image_about || DEFAULTS.about;
+  const contactEmail = cfg.business_email || 'whytecobby@gmail.com';
+
+  // Gallery cards: sessions (Brand shots / People / Products style) → up to 6, first 3 featured
+  const cards = sessionRows.slice(0, 6);
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-primary">
-              <Camera className="h-4 w-4" />
-            </div>
-            <span className="text-lg font-semibold">{brandName}</span>
+    <div className="min-h-screen bg-white font-sans text-slate-900">
+      {/* ── Nav (minimal, Pixieset-style) ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-black/5 bg-white/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.25em]">
+            <Camera className="h-4 w-4" /> {BRAND}
           </Link>
-          <div className="hidden items-center gap-8 md:flex">
-            <a href="#about" className="text-sm text-gray-600 hover:text-gray-900">About</a>
-            <a href="#services" className="text-sm text-gray-600 hover:text-gray-900">Services</a>
-            <a href="#gallery" className="text-sm text-gray-600 hover:text-gray-900">Gallery</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/book" className="btn btn-primary">Book a Session</Link>
+          <div className="flex items-center gap-6">
+            <a href="#galleries" className="hidden text-xs font-medium uppercase tracking-widest text-slate-500 hover:text-slate-900 sm:inline">Galleries</a>
+            <a href="#about" className="hidden text-xs font-medium uppercase tracking-widest text-slate-500 hover:text-slate-900 sm:inline">About</a>
+            <Link href="/portfolio" className="hidden text-xs font-medium uppercase tracking-widest text-slate-500 hover:text-slate-900 sm:inline">Portfolio</Link>
+            <Link href="/book" className="rounded-full bg-slate-900 px-5 py-2 text-xs font-bold uppercase tracking-widest text-white hover:bg-slate-800">Book a Session</Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid items-center gap-12 md:grid-cols-[1fr_0.9fr] md:gap-16">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
-                <Sparkles className="h-4 w-4" />
-                Capturing Moments, Creating Memories
-              </div>
-              <h1 className="text-5xl font-bold leading-[1.1] tracking-tight text-gray-900 md:text-6xl lg:text-[4.5rem]">
-                Timeless Photography
-                <br />
-                for Your Most
-                <br />
-                <span className="text-gray-400">Important Days</span>
-              </h1>
-              <p className="mt-5 max-w-lg text-lg leading-relaxed text-gray-500">
-                We specialize in capturing the essence of life's most precious moments with elegance, artistry, and attention to detail. From intimate portraits to grand celebrations, every frame tells your story.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/book" className="btn btn-primary btn-lg">Book a Session</Link>
-                <a href="#gallery" className="btn btn-outline btn-lg">View My Work</a>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="overflow-hidden rounded-2xl shadow-2xl">
+      {/* ── Hero: full-bleed image + brand statement ── */}
+      <header className="relative flex h-[85vh] min-h-[520px] items-center justify-center overflow-hidden bg-slate-900">
+        <img src={heroImg} alt={BRAND} className="absolute inset-0 h-full w-full object-cover opacity-90" fetchPriority="high" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/60" />
+        <div className="relative z-10 px-6 text-center text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.45em] text-white/80">{BRAND}</p>
+          <h1 className="mt-5 font-serif text-4xl font-light leading-tight tracking-tight sm:text-6xl">
+            Creative Visuals.<br />Timeless Stories.
+          </h1>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link href="#galleries" className="inline-flex h-11 items-center rounded-full border border-white/40 bg-white/10 px-7 text-xs font-bold uppercase tracking-widest backdrop-blur transition-all hover:bg-white hover:text-black">
+              View Galleries
+            </Link>
+            <Link href="/book" className="inline-flex h-11 items-center rounded-full bg-white px-7 text-xs font-bold uppercase tracking-widest text-slate-900 transition-all hover:bg-slate-100">
+              Book a Session
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Gallery links grid (Brand shots / People / Products …) ── */}
+      <section id="galleries" className="mx-auto max-w-6xl px-6 py-20">
+        <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
+          {cards.map((s, i) => (
+            <Link
+              key={s.id}
+              href={`/portfolio#session-${s.slug}`}
+              className={`group relative mb-5 block break-inside-avoid overflow-hidden rounded-lg bg-slate-100 ${i === 0 ? 'sm:col-span-2' : ''}`}
+            >
+              {s.image ? (
                 <img
-                  src={cfg.image_hero || "/images/hero-portrait.webp"}
-                  alt="Professional portrait photography"
-                  className="aspect-[3/4] w-full object-cover"
+                  src={s.image}
+                  alt={s.name}
+                  loading="lazy"
+                  className={`w-full object-cover transition-transform duration-700 group-hover:scale-105 ${i === 0 ? 'aspect-[16/10]' : i % 3 === 1 ? 'aspect-[4/5]' : 'aspect-[4/3]'}`}
                 />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Services */}
-      <section id="services" className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto mb-14 max-w-xl text-center">
-            <div className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary">
-              <Calendar className="h-4 w-4" />
-              Our Services
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">
-              Tailored Photography Experiences
-            </h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                icon: Heart,
-                title: 'Weddings',
-                desc: 'Celebrate your love story with timeless wedding photography that captures every precious moment.',
-              },
-              {
-                icon: Camera,
-                title: 'Portraits',
-                desc: 'Professional portraits that showcase your personality and elegance with artistic direction.',
-              },
-              {
-                icon: Calendar,
-                title: 'Events',
-                desc: 'Corporate events, celebrations, and special occasions documented with style and professionalism.',
-              },
-            ].map((service) => (
-              <div
-                key={service.title}
-                className="group rounded-xl border border-gray-100 bg-white p-8 transition-all hover:border-gray-200 hover:shadow-lg"
-              >
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-primary">
-                  <service.icon className="h-5 w-5" />
+              ) : (
+                <div className={`flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 ${i === 0 ? 'aspect-[16/10]' : 'aspect-[4/5]'}`}>
+                  <Camera className="h-10 w-10 text-slate-300" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-gray-900">{service.title}</h3>
-                <p className="mb-4 text-sm leading-relaxed text-gray-500">{service.desc}</p>
-                <Link href="/book" className="text-sm font-medium text-primary hover:text-primary-800">
-                  Book Now →
-                </Link>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-80 transition-opacity group-hover:opacity-95" />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-5">
+                <h3 className="font-serif text-xl font-medium text-white">{s.name}</h3>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-all group-hover:bg-white group-hover:text-black">
+                  <ArrowRight className="h-4 w-4" />
+                </span>
               </div>
-            ))}
-          </div>
+            </Link>
+          ))}
         </div>
       </section>
 
-      {/* About */}
-      <section id="about" className="border-y border-gray-100 bg-gray-50 py-24">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 md:grid-cols-2 md:gap-20">
-          <div className="overflow-hidden rounded-2xl shadow-xl">
-            <img
-              src={cfg.image_about || "/images/about-photo.webp"}
-              alt="Photography in action"
-              className="aspect-[4/5] w-full object-cover"
-            />
-          </div>
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary">
-              <Clock className="h-4 w-4" />
-              About {brandName}
-            </div>
-            <h2 className="mb-5 text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">
-              Where Art Meets Authenticity
-            </h2>
-            <p className="mb-4 text-base leading-relaxed text-gray-500">
-              With over 15 years of experience in professional photography, we've dedicated ourselves to capturing the authentic moments that matter most. Our approach combines technical expertise with artistic direction to create images that transcend time.
-            </p>
-            <p className="mb-6 text-sm leading-relaxed text-gray-500">
-              Every project is treated as a unique collaboration. We listen to your vision, understand your story, and deliver photographs that exceed expectations.
-            </p>
-            <ul className="mb-8 space-y-3">
-              {[
-                'Award-winning photography team',
-                'State-of-the-art equipment & editing',
-                'Fast turnaround with online gallery',
-                'Personalized consultation for every client',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-gray-600">
-                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-primary">
-                    <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                  </span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Link href="/book" className="btn btn-primary">Start Your Project</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery */}
-      <section id="gallery" className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto mb-10 max-w-xl text-center">
-            <div className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary">
-              <Camera className="h-4 w-4" />
-              Our Gallery
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">Explore Our Latest Work</h2>
-          </div>
-          {drivePhotos.length > 0 ? (
-            /* 🎞️ Google Drive folder slideshow — paste one link, every photo becomes a slide */
-            <>
-              <HomeSlideshow images={drivePhotos.map((d) => ({ url: sizedUrl(d.url, 1600), title: d.title }))} />
-              <div className="mt-8 text-center">
-                <Link href="/portfolio" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-                  View Full Portfolio →
-                </Link>
-              </div>
-            </>
-          ) : tiktoks.length > 0 ? (
-            /* 🎬 Latest works pulled live from TikTok — auto-updates with every post */
-            <>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                {tiktoks.map((t) => (
-                  <a key={t.id} href={t.url} target="_blank" rel="noopener" className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-900">
-                    {t.thumbnail && (
-                      <img
-                        src={t.thumbnail}
-                        alt={t.title}
-                        referrerPolicy="no-referrer"
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-white/15 backdrop-blur">
-                        <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                      </span>
-                    </div>
-                    <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-white backdrop-blur">TikTok</span>
-                    <div className="absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-black/60 via-transparent p-4 opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="line-clamp-2 text-sm font-medium text-white">{t.title}</span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-              <div className="mt-8 text-center">
-                <Link href="/portfolio" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-                  View Full Portfolio →
-                </Link>
-              </div>
-            </>
-          ) : (
-            /* Fallback showcase until TikTok is connected in Admin → Settings */
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {[
-                { label: cfg.image_gallery_1_label || 'Outdoor Portrait', pos: 'center', image: cfg.image_gallery_1 || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=1000' },
-                { label: cfg.image_gallery_2_label || 'Studio Portrait', pos: 'top', image: cfg.image_gallery_2 || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=1000' },
-                { label: cfg.image_gallery_3_label || 'Wedding Celebration', pos: 'bottom', image: cfg.image_gallery_3 || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
-                { label: cfg.image_gallery_4_label || 'Timeless Session', pos: 'center', image: cfg.image_gallery_4 || 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000' },
-              ].map((item, i) => (
-                <div key={i} className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
-                  <img
-                    src={item.image}
-                    alt={item.label}
-                    className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}
-                    style={{ objectPosition: item.pos }}
-                  />
-                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="p-5 text-sm font-medium text-white">{item.label}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="border-y border-gray-100 bg-gray-50 py-24">
-        <div className="mx-auto max-w-2xl px-6 text-center">
-          <div className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-primary">
-            <Sparkles className="h-4 w-4" />
-            Ready to Capture Your Story?
-          </div>
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-gray-900 md:text-4xl">
-            Let's Create Something Beautiful
-          </h2>
-          <p className="mb-8 text-lg text-gray-500">
-            Book a consultation with our team today and let us bring your vision to life.
+      {/* ── "Your story deserves to be seen." ── */}
+      <section className="bg-slate-50 py-24">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h2 className="font-serif text-3xl font-light tracking-tight text-slate-900 sm:text-5xl">Your story deserves to be seen.</h2>
+          <p className="mt-6 text-sm leading-relaxed text-slate-500 sm:text-base">
+            Welcome to the creative world of {BRAND}, where meaningful moments become lasting memories and ideas are transformed into compelling visual stories.
           </p>
-          <div className="flex justify-center gap-3">
-            <Link href="/book" className="btn btn-primary btn-lg">Book a Session</Link>
-            <a href="#gallery" className="btn btn-outline btn-lg">View Portfolio</a>
+          <p className="mt-4 text-sm leading-relaxed text-slate-500 sm:text-base">
+            Our portfolio showcases a collection of photography and videography projects, from timeless wedding moments and striking portraits to graduation celebrations, special events, corporate visuals, and authentic lifestyle imagery.
+          </p>
+          <Link href="/portfolio" className="mt-8 inline-flex h-11 items-center rounded-full bg-slate-900 px-7 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-slate-800">
+            View full portfolio
+          </Link>
+        </div>
+
+        {/* Masonry image wall */}
+        <div className="mx-auto mt-16 max-w-6xl px-6">
+          <div className="columns-2 gap-4 sm:columns-3 lg:columns-4">
+            {wallImages.map((url, i) => (
+              <div key={url + i} className="group mb-4 break-inside-avoid overflow-hidden rounded-lg">
+                <img src={url} alt="Studio work" loading="lazy" className={`w-full object-cover transition-transform duration-700 group-hover:scale-105 ${i % 3 === 0 ? 'aspect-[3/4]' : i % 3 === 1 ? 'aspect-square' : 'aspect-[4/5]'}`} />
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-10 md:grid-cols-4">
-            <div className="md:col-span-1">
-              <Link href="/" className="mb-3 flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-primary">
-                  <Camera className="h-4 w-4" />
-                </div>
-                <span className="text-lg font-semibold">{brandName}</span>
-              </Link>
-              <p className="max-w-xs text-sm text-gray-500">
-                Capturing life's most precious moments with elegance, artistry, and attention to detail.
-              </p>
+      {/* ── About: "I'm lincoln whyte — Get to know me" ── */}
+      <section id="about" className="mx-auto max-w-6xl px-6 py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="order-2 lg:order-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">I&apos;m lincoln whyte</p>
+            <h2 className="mt-4 font-serif text-4xl font-light leading-tight tracking-tight text-slate-900 sm:text-5xl">
+              Get to<br />know me
+            </h2>
+            <p className="mt-6 max-w-md text-sm leading-relaxed text-slate-500 sm:text-base">
+              {BRAND} is a professional photography brand based in Akosombo, Ghana, dedicated to capturing timeless moments with creativity and precision.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <a href={`mailto:${contactEmail}`} className="inline-flex h-11 items-center rounded-full bg-slate-900 px-7 text-xs font-bold uppercase tracking-widest text-white hover:bg-slate-800">Read more</a>
+              <Link href="/portfolio" className="inline-flex h-11 items-center rounded-full border border-slate-300 px-7 text-xs font-bold uppercase tracking-widest text-slate-700 hover:border-slate-900 hover:text-slate-900">See my work</Link>
             </div>
-            {[
-              {
-                title: 'Navigate',
-                links: [
-                  { label: 'About', href: '#about' },
-                  { label: 'Services', href: '#services' },
-                  { label: 'Gallery', href: '#gallery' },
-                  { label: 'Contact', href: '/book' },
-                ],
-              },
-              {
-                title: 'Services',
-                links: [
-                  { label: 'Weddings', href: '/book' },
-                  { label: 'Portraits', href: '/book' },
-                  { label: 'Events', href: '/book' },
-                  { label: 'Commercial', href: '/book' },
-                ],
-              },
-            ].map((section) => (
-              <div key={section.title}>
-                <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-900">{section.title}</h4>
-                <ul className="space-y-2.5">
-                  {section.links.map((link) => (
-                    <li key={link.label}>
-                      <Link href={link.href} className="text-sm text-gray-500 hover:text-primary">{link.label}</Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
           </div>
-          <div className="mt-10 border-t border-gray-100 pt-6 text-center text-sm text-gray-400">
-            © {new Date().getFullYear()} {brandName}. All rights reserved.
+          <div className="order-1 lg:order-2">
+            <div className="overflow-hidden rounded-2xl">
+              <img src={aboutImg} alt="Lincoln Whyte" className="aspect-[4/5] w-full object-cover" loading="lazy" />
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── "Let's connect" ── */}
+      <section className="border-t border-slate-100 bg-slate-50 py-24">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h2 className="font-serif text-4xl font-light tracking-tight text-slate-900 sm:text-5xl">Let&apos;s connect</h2>
+          <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-slate-500">
+            Have a story worth telling? Let&apos;s create something beautiful together.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <a href={`mailto:${contactEmail}`} className="inline-flex h-12 items-center rounded-full bg-slate-900 px-8 text-xs font-bold uppercase tracking-widest text-white hover:bg-slate-800">Contact me</a>
+            <Link href="/book" className="inline-flex h-12 items-center rounded-full border border-slate-300 px-8 text-xs font-bold uppercase tracking-widest text-slate-700 hover:border-slate-900 hover:text-slate-900">Book a Session</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-slate-100 py-10">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-900">{BRAND}</p>
+          <p className="text-xs text-slate-400">© {new Date().getFullYear()} {BRAND} — Akosombo, Ghana. All rights reserved.</p>
         </div>
       </footer>
     </div>
